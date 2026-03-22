@@ -1,0 +1,25 @@
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Environment
+.env
+
+# Node
+node_modules/
+
+# Build and cache
+dist/
+build/
+coverage/
+.cache/
+
+# Temporary files
+*.tmp
+*.swp

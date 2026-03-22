@@ -1,0 +1,32 @@
+{
+  "name": "dove-zksnark",
+  "version": "1.0.0",
+  "description": "Circom circuit and proof-generation utilities for the DOVE protocol",
+  "main": "scripts/make_input.js",
+  "scripts": {
+    "make:input": "node scripts/make_input.js",
+    "compile:circuit": "mkdir -p build/circuits && circom circuits/diploma_trust.circom --r1cs --wasm --sym -o build/circuits",
+    "gen:proofs": "bash scripts/gen_10_proofs.sh 10",
+    "bench:zkp": "bash scripts/bench_zkp.sh 10"
+  },
+  "keywords": [
+    "circom",
+    "snarkjs",
+    "groth16",
+    "zkproof",
+    "poseidon"
+  ],
+  "author": "Duong Anh Vu",
+  "license": "MIT",
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
+    "js-sha3": "^0.9.3",
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.6.0",
+    "poseidon-lite": "^0.3.0"
+  },
+  "devDependencies": {
+    "snarkjs": "^0.7.6"
+  }
+}
