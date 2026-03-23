@@ -181,3 +181,8 @@ These results show the on-chain cost of adding transcript-bound ownership and co
 ## Notes
 
 This repository is intentionally implementation-focused. Some generated proof artifacts are included because they are used directly in the benchmark and failure-case workflows.
+
+## Contributors
+
+- **Leader**: M.Sc. IT. Khoa Tan VO
+- **Members**: Anh-Vu Duong, Duc-Manh Chau
