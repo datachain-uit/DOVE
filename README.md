@@ -2,7 +2,7 @@
 
 DOVE is an EVM-native privacy-preserving diploma verification protocol built around Groth16 proofs and a transcript-bound Proof of Possession (PoP) signature. The implementation in this repository focuses on two parts:
 
-- the Layer1 smart contracts and Sepolia benchmarking workflow
+- the on-chain smart contracts and Sepolia benchmarking workflow
 - the zkSNARK circuit and proof-generation utilities
 
 The core idea is simple: a valid zero-knowledge proof alone is not enough. In DOVE, the prover must also sign a transcript that ties the proof to a specific verifier, session, and validity window. The verifier contract then checks those conditions on-chain before accepting the presentation.
@@ -16,6 +16,7 @@ DOVE is designed to support privacy-preserving diploma verification on Ethereum 
 - session binding through nonce and expiration checks
 - replay protection through request consumption
 - revocation awareness through on-chain registry state
+- controlled `ZKOnly` and `noPoP` ablations for isolating the cost of proof validity, session/replay checks, and transcript-bound ownership
 
 This repository is organized as an implementation-first codebase for the on-chain workflow and the zk proof pipeline used in the experiments.
 
@@ -24,7 +25,7 @@ This repository is organized as an implementation-first codebase for the on-chai
 - Groth16-based hidden-statement verification for diploma commitments
 - Transcript-bound PoP signature tied to proof, verifier, session, and validity window
 - On-chain checks for verifier binding, freshness, replay control, and revocation status
-- DOVE vs noPoP benchmarking on Ethereum Sepolia
+- DOVE vs noPoP vs ZKOnly benchmarking on Ethereum Sepolia
 - Replay and failure-case scripts for changed-session and changed-verifier scenarios
 
 ## System Architecture
@@ -38,30 +39,35 @@ The protocol has three main actors: Issuer, Prover, and Verifier.
 
 Core contracts:
 
-- `Layer1/contracts/DiplomaRegistry.sol`
-- `Layer1/contracts/DoveVerifier.sol`
-- `Layer1/contracts/NoPoPVerifier.sol`
-- `Layer1/contracts/Groth16Verifier.sol`
+- `onchain/contracts/DiplomaRegistry.sol`
+- `onchain/contracts/DoveVerifier.sol`
+- `onchain/contracts/NoPoPVerifier.sol`
+- `onchain/contracts/ZKOnlyVerifier.sol`
+- `onchain/contracts/Groth16Verifier.sol`
 
 ## Repository Structure
 
 ```text
 DOVE/
 ├── README.md                # Root overview and run instructions
-├── Layer1/                  # Solidity contracts, Hardhat config, deploy/benchmark scripts
+├── onchain/                 # Solidity contracts, Hardhat config, deploy/benchmark scripts
 │   ├── contracts/
 │   ├── scripts/
+│   │   └── lib/              # Shared script helpers
+│   ├── test/                # Local helper regression checks
 │   ├── zkp/
 │   ├── hardhat.config.js
 │   ├── package.json
 │   └── README.md
-└── zkSnark/                 # Circom circuit, proof-generation scripts, local zk workflow
+└── zk/                      # Circom circuit, proof-generation scripts, local zk workflow
     ├── circuits/
     ├── scripts/
     ├── Dockerfile
     ├── package.json
     └── README.md
 ```
+
+Workspace instructions are in [onchain/README.md](onchain/README.md) and [zk/README.md](zk/README.md). Commands starting with `cd onchain` or `cd zk` below assume the repository root.
 
 ## Quick Start
 
@@ -76,19 +82,19 @@ DOVE/
 ### Install dependencies
 
 ```bash
-cd zkSnark
+cd zk
 npm install
 
-cd ../Layer1
+cd ../onchain
 npm install
 ```
 
 ### Configure environment
 
-Create `Layer1/.env` from `Layer1/.env.example`:
+Create `onchain/.env` from `onchain/.env.example`:
 
 ```bash
-cp Layer1/.env.example Layer1/.env
+cp onchain/.env.example onchain/.env
 ```
 
 Important variables:
@@ -104,24 +110,24 @@ Important variables:
 
 ### 1. Prepare proof artifacts
 
-The zk workflow lives in `zkSnark/`. The Layer1 benchmark expects proof/public-input JSON files under `Layer1/zkp/batch/`.
+The zk workflow lives in `zk/`. The on-chain benchmark expects proof/public-input JSON files under `onchain/zkp/batch/`.
 
 Basic setup:
 
 ```bash
-cd zkSnark
+cd zk
 node scripts/make_input.js
 
 mkdir -p build/circuits
 circom circuits/diploma_trust.circom --r1cs --wasm --sym -o build/circuits
 ```
 
-Then run the Groth16 setup and proof generation flow described in `zkSnark/README.md`.
+Then run the Groth16 setup and proof generation flow described in [zk/README.md](zk/README.md), including `node scripts/gen_batch_proofs.js 100` for the independent-holder benchmark batch.
 
 ### 2. Deploy contracts on Sepolia
 
 ```bash
-cd Layer1
+cd onchain
 npx hardhat run scripts/l1_deploy_compare_pop.js --network sepolia
 ```
 
@@ -131,12 +137,13 @@ This deploys:
 - `Groth16Verifier`
 - `DoveVerifier`
 - `NoPoPVerifier`
+- `ZKOnlyVerifier`
 
-### 3. Run the DOVE vs noPoP benchmark
+### 3. Run the DOVE vs noPoP vs ZKOnly benchmark
 
 ```bash
-cd Layer1
-HARDHAT_NETWORK=sepolia node scripts/bench_l1_compare_pop.js 20
+cd onchain
+HARDHAT_NETWORK=sepolia node scripts/bench_l1_compare_pop.js 100
 ```
 
 This benchmark reports:
@@ -150,7 +157,7 @@ This benchmark reports:
 ### 4. Run replay and failure cases
 
 ```bash
-cd Layer1
+cd onchain
 HARDHAT_NETWORK=sepolia node scripts/l1_fail_cases.js
 ```
 
@@ -158,15 +165,9 @@ This script exercises failure scenarios such as replay under a changed verificat
 
 ## Results Summary
 
-Current Sepolia benchmark results:
+Benchmark and deployment output is written to `onchain/results/`, with separate CSV files for `dove`, `nopop`, and `zkonly` plus JSON summaries.
 
-- DOVE average gas used: `272,951`
-- noPoP average gas used: `262,700`
-- Additional DOVE cost over noPoP: `10,251` gas
-- Relative overhead: approximately `3.90%`
-- Security behavior: DOVE rejects copied-proof reuse under fresh-nonce and cross-verifier scenarios, while noPoP accepts the same copied proof when the underlying statement still verifies
-
-These results show the on-chain cost of adding transcript-bound ownership and context binding on top of the same verification workflow.
+Existing result files were moved with the workspace without rewriting their contents. Historical metadata may therefore contain the former workspace paths.
 
 ## Tech Stack
 

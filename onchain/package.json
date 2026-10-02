@@ -1,0 +1,31 @@
+{
+  "name": "dove-layer1",
+  "version": "1.0.0",
+  "description": "On-chain contracts and benchmarking scripts for the DOVE protocol",
+  "main": "hardhat.config.js",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "deploy:sepolia": "npx hardhat run scripts/l1_deploy_compare_pop.js --network sepolia",
+    "bench:sepolia": "HARDHAT_NETWORK=sepolia node scripts/bench_l1_compare_pop.js 100",
+    "failcases:sepolia": "HARDHAT_NETWORK=sepolia node scripts/l1_fail_cases.js"
+  },
+  "keywords": [
+    "solidity",
+    "hardhat",
+    "ethereum",
+    "groth16",
+    "privacy",
+    "zkproof"
+  ],
+  "author": "Duong Anh Vu",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "ganache-cli": "^6.12.2",
+    "hardhat": "^2.28.3"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "dotenv": "^17.2.3"
+  }
+}
